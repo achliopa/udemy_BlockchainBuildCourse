@@ -148,4 +148,76 @@ console.log(block.toString());
 
 ### Lecture 11 - Mine Blocks
 
+* the mine block function will create new blocks using the last block
+* we add a *mineBlock* method to the Block class.
+* we make it static (class method) so we dont need to create a block instance to use it
+* we pass in the last block and the data we want to pas sin the block
+* we set a timestamp. extract last blocks hash, create a new (dummy) hash and we create and return a new block instance with all the  data we set
+```
+	static mineBlock(lastBlock, data) {
+		const timestamp = Date.now();
+		const lastHash = lastBlock.hash;
+		const hash = 'todo-hash';
+
+		return new this(timestamp, lastHash, hash, data);
+	}
+```
+* we test what we have done so far in dev-test
+```
+const fooBlock = Block.mineBlock(Block.genesis(),'foo');
+console.log(fooBlock.toString());
+```
+
+### Lecture 12 - SHA256 Hash Function
+
+* we ll finally generate the block hash from timestamp,last block hash and block data
+* we ll use the SHA-256  algorithm 
+	* it produces a unique 32 byte (256 bit) hash value for unique data inputs
+	* one-way hash (impossible to decrypt)
+	* useful for block validation
+* we import crypto-js module `npm i crypto-js  --save`
+* we import the SHA256 method in block.js `const SHA256 = require('crypto-js/sha256');`
+* we add a static hash method to the block class
+```
+static hash(timestamp, lastHash, data) {
+		return SHA256(`${timestamp}${lastHash}${data}`).toString();
+	}
+```
+* we use it to generate the block hash in the mineBlock method `const hash = Block.hash(timestamp, lastHash, data);`
+
+### Lecture 13 - Test the Block
+
+* console logs  is not proper testing. we need a proper test env for ourproject * we will use jest `npm i jest --save-dev`
+* jest look for test.js files
+* we add a *block.test.js* file
+* in the file we import the block class `const Block  = require('./block');`
+* we add test code in jest style to test block  link to previous link
+```
+describe('Block',()=>{
+
+	let data, lastBlock, block;
+
+	beforeEach(() => {
+		data = 'bar';
+		lastBlock = Block.genesis();
+		block = Block.mineBlock(lastBlock,data);
+	});
+
+	it('sets the `data` to match the input',()=>{
+		expect(block.data).toEqual(data);
+	});
+
+	it('sets the `lastHash` to match the hash of the last block',()=>{
+		expect(block.lastHash).toEqual(lastBlock.hash)
+	});
+});
+```
+* we add a test script in *package.json* `"test": "jest --watchAll",`
+* watchAll flag runs a server that listens to file changes and reruns tests
+* we `npm test` or `npm run test` and see our 2 tests pass
+
+## Section 3 - Build the Blockchain - the Chain
+
+### Lecture 14 - Build the Blockchain Class
+
 * 
