@@ -341,3 +341,47 @@ describe('Blockchain',()=>{
 		expect(bc.isValidChain(bc2.chain)).toBe(false);		
 	});
 ```
+
+### Lecture 19  - Replace the Chain
+
+* we will add a 'replaceChain' method to replace the chain with a valid chain
+* before we replace the local var we check for validation of the incoming chain
+* we also check the length of the incoming chain
+```
+	replaceChain(newChain) {
+		if (newChain.length <= this.chain.length){
+			console.log('Received chain is not longer than the current chain.');
+			return;
+		} else if (!this.isValidChain(newChain)){
+			console.log('The received chain is not valid.');
+			return;			
+		}
+		console.log('Replaceing blockchain with the new chain');
+		this.chain = newChain;
+	}
+```
+
+### Lecture 20 - Test Chain Replacement
+
+* we will test chain replacement if input is valid
+* we will test non replacement if input chain is shorter
+* we will test non replacement if input chain is invalid
+```
+	it('replace the chain with a valid chain',()=>{
+		bc2.addBlock('goo');
+		bc.replaceChain(bc2.chain);
+		expect(bc.chain).toEqual(bc2.chain);
+	});
+
+	it('does not replace the chain with one of less or equal to length',()=>{
+		bc.addBlock('foo');
+		bc.replaceChain(bc2.chain);
+		expect(bc.chain).not.toEqual(bc2.chain);
+	});
+```
+
+## Section 4 - Develop the Blockchain Application
+
+### Lecture 21 - Organize the Project
+
+* 
