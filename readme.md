@@ -384,4 +384,12 @@ describe('Blockchain',()=>{
 
 ### Lecture 21 - Organize the Project
 
-* 
+* we add a blockchain folder and place all our chain relatred source files so far
+* as blockchain.js has same name as the folder we rename it index.js to facilitate imports
+* we add an app folder for our aplication and add an index.js file
+
+### Lecture 22 - BlockchainAPI: Get Blocks
+
+* we will add an http API to allow clients comm with the app
+* we will  use express `npm i express --save`
+* we import it in index.js
