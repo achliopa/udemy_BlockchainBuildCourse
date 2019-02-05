@@ -453,4 +453,39 @@ app.post('/mine',(req,res)=>{
 * we wont use separate classes. the server class will be able to play both roles
 * it will know which role to play besed on an env var we will keep updated
 
-### Lecture 25 
+### Lecture 25 - Create the Websocker Server
+
+* our goal is to have at least 2 servers running on our blockchain app and through websockets pub-sub make sure all are in same line it terms of chain progress
+* we install websockets `npm i ws --save`
+* we create a neww sc file in /app named 'p2p-server.js'
+* in it we imort ws `const Websocket = require('ws');`
+* we set a port like express env var style `const P2P_PORT = process.env.P2P_PORT || 5001;`
+* we add a peers const to allow multiple ports for peers on same machine (multiport) e.g 'ws://localhost:5001,ws://localhost:5002' which we split into an array of strings `const peers = process.env.PEERS ? process.env.PEERS.split(',') : [];`
+* we define a server class setting the constructor. in the constructor we pass in a blockchain instance which we set as local attribute. also we set n epty list of sockets
+```
+class P2pServer {
+	constructor(blockchain) {
+		this.blockchain = blockchain;
+		this.sockets = [];
+	}
+}
+```
+* we implement a listen method that sets up a websocket server on port 5001 and
+set an on 'connection' event handler to listen for new connections.
+* in the handler we get the socket obect and add it to the sockets list
+```
+	listen() {
+		const server = new Websocket.Server({port: P2P_PORT});
+		server.on('connection',socket=>this.connectSocket(socket));
+		console.log(`Listening for peer-to-peer connections on: ${P2P_PORT}`);
+	}
+
+	connectSocket(socket) {
+		this.sockets.push(socket);
+		console.log('Socket connected');
+	}
+```
+
+### Lecture 26 - Connect to Blockchain Peers
+
+* 
