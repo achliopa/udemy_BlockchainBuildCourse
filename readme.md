@@ -392,4 +392,65 @@ describe('Blockchain',()=>{
 
 * we will add an http API to allow clients comm with the app
 * we will  use express `npm i express --save`
-* we import it in index.js
+* we import it in index.js `const express = require('express');`
+* we import blockchain class `const Blockchain = require('../blockchain');`
+* we define the node list port accepting the env var `const HTTP_PORT = process.env.HTTP_PORT || 3001;` 
+* we can define an alternate port at runtime as env var in shell `$ HTTP_PORT =3002 npm run dev`
+* we add boilerrplate express code and a route to return the blockchain in JSON format
+```
+const app = express();
+const bc = blockchain();
+
+app.get('/blocks',(req,res)=>{
+	res.json(bc.chain);
+});
+
+app.liosten(HTTP_PORT, ()=>{
+	console.log(`Listeing on port ${HTTP_PORT}`);
+});
+```
+* we add a start script in package.json `"start": "node ./app"`
+* we add a dev server script `"dev": "nodemon ./app"`
+
+### Lecture 23 - Mine Blocks Post Request
+
+* we add a post route for block mining
+* we will use body-parser `npm i body-parser --save`
+* we import it `const bodyParser = require('body-parser');` and use its json parser as middleware in express `app.use(bodyParser.json());`
+* we use body  parser to add json in our request
+* our post request will be
+```
+app.post('/mine',(req,res)=>{
+	const block = bc.addBlock(req.body.data);
+	console.log(`New block added: ${block.toString()}`);
+	res.redirect('/blocks');
+});
+```
+* we pass the data in our request body as as raw json object
+```
+{
+	"data": "foo"
+}
+```
+* we get back the chain
+
+## Section 5 - Create the Blockchain Network
+
+### Lecture 24 - Peer to Peer Server
+
+* a true blochchain system can support multiple users
+* we ll use a peer-to-peer server to connect multipl eusers running the app
+* the first peer to create the blockchain will start the peer-to-pper server (websockets)
+* the server will listen to a port (5001) for websocket connections
+* when other peers launch the app they start their own websocker service connecting to the real-time server in a RT basis
+* the original server will detect new connections
+* the peers start exchangin messages through websockets.
+* we needto make sure a new peer once connected gets a copy of the blockchain
+* new changes to the chain are broadcasted so that all peers can update their chain
+* there are 2 possibilities on how an individual server will behave:
+	* as initial instace of the app it will start the p2p server and wait for connections
+	* as subsequent instance of the app (later server) it will connect to the original server
+* we wont use separate classes. the server class will be able to play both roles
+* it will know which role to play besed on an env var we will keep updated
+
+### Lecture 25 
