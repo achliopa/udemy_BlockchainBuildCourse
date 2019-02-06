@@ -488,4 +488,23 @@ set an on 'connection' event handler to listen for new connections.
 
 ### Lecture 26 - Connect to Blockchain Peers
 
-* 
+* we gave the app the ability to start a server the other app instances can connect to
+* we now have to make sure later app instances connect with the first app server ASAP when they specify as app peers
+* in the listen method after registering the shocket of incomming connection we add a connectToPeers() method
+* in this method we iterate through the peers array opening a comm soocket for each one passing in the peer addr3ess
+* we also listen to the open event of the socket in case the p2p server is started after the peers launch
+```
+	connectToPeers() {
+		peers.forEach(peer =>{
+			// ws://localhost:5001
+			const socket = new Websocket(peer);
+			socket.on('open',()=>{
+				this.connectSocket(socket);
+			});
+		});
+	}
+```
+* we export the server class `module.exports = P2pServer;`
+* we import it in app/index.js `const P2pServer = require('./p2p-server');` and create an instance `const p2pServer = new P2pServer(bc);`
+* after starting the express server we start the p2p server p2pServer.listen();`
+* we run and test
