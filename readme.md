@@ -506,5 +506,25 @@ set an on 'connection' event handler to listen for new connections.
 ```
 * we export the server class `module.exports = P2pServer;`
 * we import it in app/index.js `const P2pServer = require('./p2p-server');` and create an instance `const p2pServer = new P2pServer(bc);`
-* after starting the express server we start the p2p server p2pServer.listen();`
-* we run and test
+* after starting the express server we start the p2p server `p2pServer.listen();`
+* we run and test `npm run dev` we lauch a second server on different port using the same runnable `HTTP_PORT=3002 P2P_PORT=5002 PEERS=ws://localhost:5001 npm run dev` it connects to the open socket
+* we launch a 3rd peer that will connect to the formet 2 using the ws endpoints `HTTP_PORT=3003 P2P_PORT=5003 PEERS=ws://localhost:5001,ws://localhost:5002 npm run dev` we see sockets opening for 3 peers
+* we ll use sockets to share the blockchain
+
+### Lecture 27 - Handle Messages from Peers
+
+* we will use the send() method of the websocket object
+* we will do that in messageHandler(socket){} helper method of theP2pServer class
+* in this method we listen for the the message evend on the socket (when send() is used on the co-peer using the soket)
+* for the demo we get the sent message parse it to JSON and log it
+```
+	messageHandler(socket) {
+		socket.on('message',(message)=>{
+			const data = JSON.parse(message);
+			console.log('data',data);
+		});
+	}
+```
+* we attach the handler to the connectSocket() as this is invoked once when the socket is opened
+* our sockets can now receive events. we have to send them though.
+* in the moment we do the initial connection 'connectSocket()' we send the blockchain to the new peer. `socket.send(JSON.stringify(this.blockchain.chain));`
