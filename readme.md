@@ -550,4 +550,4 @@ in the messageHandler upon receiveing the blockchain we will call the replace bl
 	}
 ```
 * we use the new method in the post express route handler for /mine `	p2pServer.syncChains();`
-* we test
+* we test in POSTMAN by POST to localhost:3001/mine and confirming with GET in localhost:3003/blocks and localhost:3003/blocks
