@@ -528,3 +528,26 @@ set an on 'connection' event handler to listen for new connections.
 * we attach the handler to the connectSocket() as this is invoked once when the socket is opened
 * our sockets can now receive events. we have to send them though.
 * in the moment we do the initial connection 'connectSocket()' we send the blockchain to the new peer. `socket.send(JSON.stringify(this.blockchain.chain));`
+* we mine some blocks and then laundh our peers to test . we see the blochain sent between the peers
+* our p2p prtocol can poorly scale as bc grows as everybody send all the chain to the rest of peers
+
+### Lecture 28 - Synchronize the Blockchain among Peers
+
+* to improvw performance. the one who mines will tell others peers to replace their blochcahin with his
+in the messageHandler upon receiveing the blockchain we will call the replace blockchain method to replace the peers existing one `this.blockchain.replaceChain(data);` this will happen in the current implementation only upon creation
+* we need to do it also when a block is mined. we add a new method for that 'syncCHains()' that broadcasts to all sockets (peers) the chain.
+```
+	syncCHains() {
+		this.sockets.forEach(socket => {
+			this.sendChain(socket);
+		});
+	}
+```
+* we move the send chain to a helper method to keep things DRY
+```
+	sendChain(socket) {
+		socket.send(JSON.stringify(this.blockchain.chain));
+	}
+```
+* we use the new method in the post express route handler for /mine `	p2pServer.syncChains();`
+* we test
