@@ -604,3 +604,55 @@ bitcoin current rate is 10mins
 
 * we ll add jest tests for nonce
 * at project root we add a 'config.js' file where we define and export difficulty xp from block.js
+```
+	it ('generates a hash that matches the difficulty',()=>{
+		expect(block.hash.substring(0, DIFFICULTY)).toEqual('0'.repeat(DIFFICULTY));
+	});
+```
+* this is brute force pow
+* we want to adjust difficulty as new mine power is added to network throuh peers
+
+### Lecture 32 - Dynamic Block Difficulty
+
+* as miners add up there is higher probability that one of them will find the target so mine rate imporves. to keep it stable we increase difficulty
+* we will add a difficulty adjustment mechanism:
+	* it will compare timestamps of 2 consecutive blocks . if time diff is > targer minerate e decrease difficulty or the reverse
+* we add and export `const MINE_RATE = 3000;` in config
+* we import minrate in block.js
+* we add difficulty in block constructor
+* in our hash funcs we include the configurable difficulty
+* we add in mineBlock and adjust it in a static class helper method adjustDifficulty() passing in lastBlock and current timestamp (RT adjustment)
+```
+	static mineBlock(lastBlock, data) {
+		let hash,timestamp;
+		const lastHash = lastBlock.hash;
+		let { difficulty } = lastBlock; 
+		let nonce = 0;
+		do {
+			nonce++;
+			timestamp = Date.now();
+			difficulty = Block.adjustDifficulty(lastBlock, timestamp);
+			hash = Block.hash(timestamp, lastHash, data, nonce, difficulty);
+		} while (hash.substring(0,difficulty) !== '0'.repeat(difficulty));
+		
+		return new this(timestamp, lastHash, hash, data, nonce, difficulty);
+	}
+```
+* adjust method
+```
+	static adjustDifficulty(lastBlock, currentTIme) {
+		let { difficulty } = lastBlock;
+		difficulty = lastBlock.timeStamp + MINE_RATE > currentTIme ? difficulty + 1 : difficulty -1;
+		return difficulty;
+	}
+```
+* this approach is problematic...
+
+### Lecture 33 - Test Difficulty Adjustment
+
+* we ll add a test for the helper method
+```
+	it('lowers the difficulty for slowly mined blocks',()=>{
+		expect(Block.adjustDifficulty(block, block.timestamp+300000)),toEqual(block.difficulty-1);
+	});
+```
