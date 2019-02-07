@@ -551,3 +551,56 @@ in the messageHandler upon receiveing the blockchain we will call the replace bl
 ```
 * we use the new method in the post express route handler for /mine `	p2pServer.syncChains();`
 * we test in POSTMAN by POST to localhost:3001/mine and confirming with GET in localhost:3003/blocks and localhost:3003/blocks
+
+## Section 6 - Proof of Work
+
+### Lecture 29 - Proof of Work and the 51% Attack
+
+* PoW is a consesnus algo that requires miners to do computational intesive work to add blocks
+* Any peer can replace the blockchain
+* PoW makes it expensive and near impossible to generate corrupt chains
+* Manageable to submit one block, unproductive to generate the entire chain
+* THe PoW system used in BitCoin is hashcash. Created in 1997  was used to prevent email spamming
+	* at any point of time there is a level of difficulty in Blockchain system
+	* difficulty is the number of leading zeros in the producted hash.
+	* the more zeroes (smaller hash) the more difficult to come across in hashing
+	* they rehash witht he same data by changing the nonce val (random num)
+	* this work is called mining
+* the difficulty sets the rate of mining. the other param is the comp power of miners
+* to keep rate of mining stable. the more power the more difficulty
+bitcoin current rate is 10mins
+* a 51% attack in a PoW network is when a malicious miner has control on >51% of the networks computational power
+* if they do so they can replace the blockchain with one in their favor
+* to get control over bitcoin network someone has to spend 6b$ in equipment
+
+### Lecture 30 - Proof of Work and the Nonce
+
+* we ll add the nonce to recalculate the hash
+* in block.js we add a global for difficulty `const DIFFICULTY = 4;`
+* we add the nonce in Block class and pass it in constructor
+* we include it in hash calc
+```
+	static hash(timestamp, lastHash, data, nonce) {
+		return SHA256(`${timestamp}${lastHash}${data}${nonce}`).toString();
+	}
+```
+* we use it in blockHash func and in toString helper and in gennesis
+* we need to do the reshash to match the difficulty in mineBlock()
+```
+	static mineBlock(lastBlock, data) {
+		let hash,timestamp;
+		const lastHash = lastBlock.hash;
+		let nonce = 0;
+		while (hash.substring(0,DIFFICULTY) !== '0'.repeat(DIFFICULTY)) {
+			nonce++;
+			timestamp = Date.now();
+			hash = Block.hash(timestamp, lastHash, data, nonce);
+		}
+		return new this(timestamp, lastHash, hash, data, nonce);
+	}
+```
+
+### Lecture 31 - Test the Nonce Functionality
+
+* we ll add jest tests for nonce
+* at project root we add a 'config.js' file where we define and export difficulty xp from block.js
