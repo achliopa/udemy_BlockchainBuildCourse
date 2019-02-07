@@ -28,11 +28,12 @@ class Block {
 		let hash,timestamp;
 		const lastHash = lastBlock.hash;
 		let nonce = 0;
-		while (hash.substring(0,DIFFICULTY) !== '0'.repeat(DIFFICULTY)) {
+		do {
 			nonce++;
 			timestamp = Date.now();
 			hash = Block.hash(timestamp, lastHash, data, nonce);
-		}
+		} while (hash.substring(0,DIFFICULTY) !== '0'.repeat(DIFFICULTY));
+		
 		return new this(timestamp, lastHash, hash, data, nonce);
 	}
 
