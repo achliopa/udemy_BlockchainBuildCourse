@@ -671,4 +671,41 @@ for(let i=0;i<10;i++){
 
 ### Lecture 35 - Wallets, Keys and Transactions
 
+* Wallet: core component of cryptoicurrency with 3 components
+	* it stores the balance of the individual
+	* it sore an individual's keys (Private key + Public Key). Private key used to generate digital signatures. Public Key used to verify signatures
+	* it stores the wallets public address = Public Key
+* Transactions capture the info behing the exchangeof cryptocurrewncy between individuals. they contain:
+	* Input: timestamp, Balance, signature, senders public key
+	* Output: amount(amount to send), address(recepients public key)
+	* Output: amount(senders balance after the transactions, address(sender)
+* Blocks in a chain can  contain multiple transactions
+* Digital signatures:
+	* must be added to a transaction
+	* use private key + data to create an encrypted hash value.
+	* public use is use d to decrypt and get the original data. if data match they have not been tampered and was signed by the individual with the correct private key
+* Blockchain powered Cryptocurrencies
+	* contain wallet objects
+	* keys for digital signatures and verification
+	* have transaction objects to represent currency exchange
+
+### Lecture 36 - Create Wallet
+
+* to extend the blockhcain with cryptocurrency we need more elements in the app
+	* we need wallet objects with a set of private and public keys
+	* we need transaction objects
+* we create a wallet folder and index.js file in it for wallet class
+* we add a constructor  and 3 props. balance, keypair and publicKey
+* we add INITIAL_BALANCE in config.js and pass it on to wallet
+* we add a toString method for logging
+```
+	toString() {
+		return `Wallet - 
+			publicKey : ${this.publicKey.toString()}
+			balance   : ${this.balance}`
+	}
+```
+
+### Lecture 37 - Chain Util and Key Generation
+
 * 
