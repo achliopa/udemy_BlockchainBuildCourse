@@ -3,7 +3,7 @@ const SHA256 = require('crypto-js/sha256');
 const { DIFFICULTY, MINE_RATE } = require('../config');
 
 class Block {
-	constructor(timestamp, lastHash, hash, data,nonce) {
+	constructor(timestamp, lastHash, hash, data, nonce, difficulty) {
 		this.timestamp = timestamp;
 		this.lastHash = lastHash;
 		this.hash = hash;
@@ -23,7 +23,7 @@ class Block {
 	}
 
 	static genesis() {
-		return new this('Genesis time','-------','fir57-h45h',[], 0, DIFFICULTY);
+		return new this('genesis time','-------','fir57-h45h',[], 0, DIFFICULTY);
 	} 
 
 	static mineBlock(lastBlock, data) {
@@ -31,13 +31,14 @@ class Block {
 		const lastHash = lastBlock.hash;
 		let { difficulty } = lastBlock; 
 		let nonce = 0;
+
 		do {
 			nonce++;
 			timestamp = Date.now();
 			difficulty = Block.adjustDifficulty(lastBlock, timestamp);
 			hash = Block.hash(timestamp, lastHash, data, nonce, difficulty);
 		} while (hash.substring(0,difficulty) !== '0'.repeat(difficulty));
-		
+
 		return new this(timestamp, lastHash, hash, data, nonce, difficulty);
 	}
 
@@ -46,13 +47,13 @@ class Block {
 	}
 
 	static blockHash(block) {
-		const { timestamp, lastHash, data, nonce } = block;
+		const { timestamp, lastHash, data, nonce, difficulty } = block;
 		return Block.hash(timestamp, lastHash, data, nonce, difficulty);
 	}
 
-	static adjustDifficulty(lastBlock, currentTIme) {
+	static adjustDifficulty(lastBlock, currentTime) {
 		let { difficulty } = lastBlock;
-		difficulty = lastBlock.timeStamp + MINE_RATE > currentTIme ? difficulty + 1 : difficulty -1;
+		difficulty = lastBlock.timestamp + MINE_RATE > currentTime ? difficulty + 1 : difficulty - 1;
 		return difficulty;
 	}
 }

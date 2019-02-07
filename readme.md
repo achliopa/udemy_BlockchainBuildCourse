@@ -652,7 +652,23 @@ bitcoin current rate is 10mins
 
 * we ll add a test for the helper method
 ```
-	it('lowers the difficulty for slowly mined blocks',()=>{
-		expect(Block.adjustDifficulty(block, block.timestamp+300000)),toEqual(block.difficulty-1);
+it('lowers the difficulty for slowly mined blocks',()=>{
+		expect(Block.adjustDifficulty(block, block.timestamp+300000)).toEqual(block.difficulty-1);
 	});
 ```
+* we have to adapt the prev test to use adjustable difficulty (replace DIFFICULTy with block.difficulty)
+* we ad a test to test the opposite, that difficulty is raised for quick mined blocks
+* we will add 10 blocks to test the mine rate. we will do this thest in dev-test.js in project root
+* we import and instantiate a blockchain and do a for loop to mine 10 blocks
+```
+for(let i=0;i<10;i++){
+	console.log(bc.addBlock(`foo ${i}`.toString()));
+}
+```
+* we run it `npm run dev` or `time node dev-test.js` and get the time
+
+## Section 7 - Wallets and Transactions on the Blockchain
+
+### Lecture 35 - Wallets, Keys and Transactions
+
+* 
