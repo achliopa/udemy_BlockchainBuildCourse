@@ -708,4 +708,96 @@ for(let i=0;i<10;i++){
 
 ### Lecture 37 - Chain Util and Key Generation
 
-* 
+* to implement symmetric cryptography we will import eliptic a module that does elliptic curve cryptography (ECC) `npm i elliptic --save`
+* it is mathematicaly infeasible to guess the answer to a rnadonly generated eliptic curve
+* we add a sf in root called 'chain-util.js'
+* there we will add util methods to generate keys encrypt hashes get signaured etc
+* we import ec from elliptic `const EC = require('elliptic').ec;` and define a ChainUtil class
+* we use the smae algo as bitcoin `const ec = new EC('secp256k1');`
+* secp256k1: sec = Standards for Efficient Cryptography p = prime 256 = 256bits or 32Bytes k=koblets (mathematician) 1 = first implementation fo the algo int he standard
+* it creates a genkeypair object with a static method. 
+```
+	static genKeyPair() {
+		return ec.genKeyPair()
+	}
+```
+* we export and impot chaiutil in wallet class
+* we use the new method to create the keyPair prop and then extract the pubicKeyin its hex form
+```
+		this.keyPair = ChainUtil.genKeyPair();
+		this.publicKey = this.keyPair.getPublic().encode('hex');
+```
+* we will test the functionality using the dev-test.js testbench cling the pubkey
+```
+const wallet = new Wallet();
+console.log(wallet.toString());
+```
+
+### Lecture 38 - Create a Transaction
+
+* the transaction will have nput output and id.
+* id helps find them out in transaction collections
+* to generate id we will use uuid module `npm i uuid --save`
+* we import it in chain-util. we will use v1 that is timestamp based `const uuidV1 = require('uuid/v1');`
+* we add a static id method
+```
+static id() {
+		return uuidV1();
+	}
+```
+* we add a 'transaction.js' file in /wallet and import chain-util `const ChainUtil = require('../chain-util');`
+* we add a constructor setting 3 props. id, input, outputs. id is `this.id = ChainUtil.id();` we  set input to null and outputs to empty array []
+* we add a static method newTransaction() to se the outputs 1: for the exchange 2: for the balance of sender after the exchange
+* to implement the transaction logic we add a static method 'newTransaction()'
+	* it gets 3 inputs: senderWallet, recipient(his address), amount
+	*  we instantiate a transaction object
+	* do the checks
+	* if there is money set the outputs
+```
+	static newTransaction(senderWallet, recipient, amount) {
+		const transaction = new this();
+
+		if (amount > senderWallet.balance) {
+			console.log(`Amount: ${amount} exceeds balance.`);
+			return;
+		}
+
+		transaction.outputs.push(...[
+			{ 
+				amount: senderWallet.balance - amount,
+			  	address: senderWallet.publicKey 
+			},
+			{
+				amount,
+				address: recipient
+			}
+		]);
+
+		return transaction;
+	}
+```
+* we export transaction class
+
+### Lecture 39 - Test the Transaction
+
+* we add a testfile for the Transaction class 'transaction.test.js'
+* we import tranasction and wallet class
+* we set pretest data and test that address in transaction matches the senders publicKey and that correct amoun tis transfered
+```
+describe('Transaction',()=>{
+	let transaction, wallet,recipient,amount;
+
+	beforeEach(()=>{
+		wallet = new Wallet();
+		amount = 50;
+		recipient = 'r3c1p13nt';
+		transaction = Transaction.newTransaction(wallet, recipient, amount);
+	});
+
+	it('outputs the `amount` subtracted from the wallet balance', ()=>{
+		expect(transaction.outputs.find(output => output.address === wallet.publicKey).amount)
+		.toEqual(wallet.balance - amount);
+
+	});
+});
+```
