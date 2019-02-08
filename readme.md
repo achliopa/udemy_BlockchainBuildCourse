@@ -801,3 +801,72 @@ describe('Transaction',()=>{
 	});
 });
 ```
+* we will now test that recipients address is in the transaction
+```
+	it('outputs the `amount` added to the recipient', ()=>{
+		expect(transaction.outputs.find(output => output.address === recipient).amount)
+		.toEqual(amount);
+	});
+```
+* genKeyPair() uses a module brorand that runs on browser. to run on node we need to add 
+```
+  "jest": {
+    "testEnvironment": "node"
+  },
+```
+* in package.json
+* we test a bad scenario that there are not enough funds
+```
+	describe('transacting with an amount that exceeds the balance',()=>{
+		beforeEach(()=>{
+			amount = 50000;
+			transaction = Transaction.newTransaction(wallet, recipient, amount);
+		});
+
+		it('does not create the transaction',()=>{
+			expect(transaction).toEqual(undefined);
+		});
+	});
+```
+
+### Lecture 40 - Sign a Transaction
+
+* we will add signing to our wallet class using the keyPair obj sign() method
+```
+	sign(dataHash) {
+		return this.keyPair.sign(dataHash);
+	}
+```
+* we will add signTransaction to add signature to the transaction input based on the sender wallets keypair
+* we make a hash static method in chain-utils
+```
+	static hash(data) {
+		return SHA256(JSON.stringify(data).toString());
+	}
+```
+* we do hashing in block using this method
+* our sign Transaction method is 
+```
+	static signTransaction(transaction, senderWallet) {
+		transaction.input = {
+			timestamp: Date.now(),
+			amount: senderWallet.balance,
+			address: senderWallet.publicKey,
+			signature: senderWallet.sign(ChainUtil.hash(transaction.outputs))
+		};
+	}
+```
+* we want to sign every new transaction (we add it in newtransactioN()) `Transaction.signTransaction(transaction, senderWallet);`
+
+### Lecture 41 - Test the Transaction Input
+
+* test the input amount equals the balance
+```
+	it('inputs the ballance of the wallet', ()=>{
+		expect(transaction.input.amount).toEqual(wallet.balance);
+	});
+```
+
+### Lecture 42 - Verify Transactions
+
+* 
