@@ -1186,4 +1186,195 @@ app.get('/public-key', (req,res)=>{
 
 ### Lecture 56 - Miners of Transactions
 
+* miners take transactions from the transaction pool and store them as data in the block
+* miners receive rewards for mining (transaction fee)
+* transactions after mined o from 'unconfirmed' in the pool to 'confirmed' in the chain
+
+### Lecture 57 - Create the Miner Class
+
+* in app we add 'miner.js' adding a Miner class passing in bc,tp, wallet and p2pserver in the constructor
+* the main method is the mine()
+	* we extract validTransactions from teh pool (using the validTransactions() method)
+	* include a reward for the miner
+	* create a block consisting of the valid transactions
+	* sunchronize the chains in the p2p server
+	* clear the transaction pool
+	* broadcast to every miner to clear their transaction pools
+
+### Lecture 58 - Grab Valid Transactions
+
+* we add a 'validTransactions()' method in transactionPool class to extract valid transactions
+* the checks done are
+	* the total output amount maches the original balance in input amount
+	* verify signbature of any  transaction (not corrupt data)
+	* returne a filtered transactions array
+* to get the total amount we use JS reduce() method
+```
+	validTransactions() {
+		return this.transactions.filter(transaction=> {
+			const outputTotal = transaction.outputs.reduce((total, output) => {
+				return total + output.amount;
+			}, 0);
+
+			if (transaction.input.amount !== outputTotal) {
+				console.log(`Invalid transaction from ${transaction.input.address}`);
+				return;
+			}
+
+			if(!Transaction.verifyTransaction(transaction)) {
+				console.log(`Invalid signature from ${transaction.input.address}.`);
+			}
+
+			return transaction;
+		});
+	}
+```
+
+### Lecture 59 - Test Valid Transactions
+
+* we will add a test in the testfile
+* we replace transaction creation in beforeeach with wallet.createetransaction `transaction = wallet.createTransaction('r4nd-4ddr355',30,tp);`
+* we will create a pool with mix of valid and invalid transactions to filter out
+* we get valid transactions from the pool and we will corrupt half of them
+```
+		beforeEach(()=>{
+			validTransactions = [...tp.transactions];
+			for (let i=0; i<6; i++) {
+				wallet = new Wallet();
+				transaction = wallet.createTransaction('r4nd-4ddr355',30,tp);
+				if(i%2==0){
+					transaction.input.amount = 999999;
+				} else {
+					validTransactions.push(transaction);
+				}
+			}
+		});
+```
+* our frirst test checks that validtransactionsa re a subset of pool
+```
+		it('shows a difference between valid and corrupt transactions', ()=>{
+			expect(JSON.stringify(tp.transactions)).not.toEqual(JSON.stringify(validTransactions));
+		});
+```
+* we check that valid transactions are filtered correclty
+```
+		it('grabs valid transactions',()=>{
+			expect(tp.validTransactions()).toEqual(validTransactions)
+		});
+```
+
+### Lecture 60 - Reward Transactions
+
+* reward transaction will pay miners money for mining
+* its like a ormal transaction with only one output
+* the input will be unique stating that the blockchain initiated the t rasaction not a sender wallet
+* blockchain will have its own walled to sign its reward transactions
+* we add the MINING-REWARD amount in config
+* in transaction.js we import the MINE_REWARD
+* we will extract part of newTransaction() we want to reuse for the rewardTransaction in a helper method to keep code DRY
+```
+	static transactionWithOutputs(senderWallet,outputs) {
+		const transaction = new this();
+		transaction.outputs.push(...outputs);
+		Transaction.signTransaction(transaction, senderWallet);
+		return transaction;
+	}
+```
+* DRYed up newTransaction() becomes
+```
+	static newTransaction(senderWallet, recipient, amount) {
+		if (amount > senderWallet.balance) {
+			console.log(`Amount: ${amount} exceeds balance.`);
+			return;
+		}
+		return Transaction.transactionWithOutputs(senderWallet, [
+			{ 
+				amount: senderWallet.balance - amount,
+			  	address: senderWallet.publicKey 
+			},
+			{
+				amount,
+				address: recipient
+			}
+		]);
+	}
+```
+* we now build the rewardTransaction sending the MINING_REWARD from blockchain wallet to the minersWallet
+* in wallet class we will add the blockChain wallet create static class method
+```
+	static blockchainWallet(){
+		const blockchainWallet = new this();
+		blockchainWallet.address = 'blockchain-wallet';
+		return blockchainWallet;
+	}
+```
+
+### Lecture 61 - Test Reward Transactions
+
+* in transaction.test.js we will test reward creation
+```
+describe('creating a reward tranaction',()=>{
+		beforeEach(()=>{
+			transaction = Transaction.rewardTransaction(wallet, Wallet.blockchainWallet());
+		});
+
+		it('rewards the miners wallet',()=>{
+			expect(transaction.outputs.find(output => output.address === wallet.publicKey).amount)
+			.toEqual(MINING_REWARD);
+		});
+	});
+```
+
+### Lecture 62 - Reward Valid, and Clear Transactions
+
+* we go back to flesh out the mine() method in miner class
+```
+	mine() {
+		const validTransaction = this.transactionPool.validTransactions();	
+		// include a reward for the miner
+		validTransactions.push(Transaction.rewardTransaction(this.wallet, Wallet.blockchainWallet()));
+		// create a block consisting of the valid transactions
+		const block = this.blockchain.addBlock(validTransactions);
+		// sunchronize the chains in the p2p server
+		this.p2pServer.syncChains();
+		// clear the transaction pool
+		this.transactionPool.clear();
+		// broadcast to every miner to clear their transaction pools
+	}
+```
+* we implement clear() method in the transactionPool
+```
+	clear() {
+		this.transactions = [];
+	}
+```
+* we test the clear method
+```
+	it('clears transactions',()=>{
+		tp.clear();
+		expect(tp.transactions).toEqual([]);
+	});
+```
+* the oly thing lest is to broadcast the clear transaction order among peers
+
+### Lecture 63 - Broadcast Clear Transactions
+
+* we ll add a new message type in p2p server to `clear_transactions` and add it to handlers
+```
+				case MESSAGE_TYPES.clear_transactions:
+					this.transactionPool.clear();
+					break;
+```
+* we add broadcastClearTransactions
+```
+	broadcastClearTransaction() {
+		this.sockets.forEach(socket => socket.send(JSON.stringify({
+			type: MESSAGE_TYPES.clear_transactios
+		})));
+	}
+```
+* we use it in the mine() function `this.p2pServer.broadcastClearTransactions();`
+
+### Lecture 64 - Mine Transactions Endpoint
+
 * 
