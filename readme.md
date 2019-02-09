@@ -869,4 +869,28 @@ describe('Transaction',()=>{
 
 ### Lecture 42 - Verify Transactions
 
-* 
+* we need to be able to verify the authenticity of the signatures.
+* in our final system multiple users will submit transactions. miners on the blockchain will take chunks of transactions and include them as data in blocks
+* they should include only valid transactions
+	* verify validity of signature
+* we will add it as helper in chain-util
+* elliptic has a method for verify as part of the key class.
+```
+	static verifySignature(publicKey,signature,dataHash) {
+		return ec.keyFromPublic(publicKey, 'hex').verify(dataHash,signature);
+	}
+```
+* we use the method in transaction class as verifyTransaction static method.
+```
+	static verifyTransaction(transaction) {
+		return ChainUtil.verifySignature(
+			transaction.input.address,
+			transaction.input.signature,
+			ChainUtil.hash(transaction.outputs)
+		);
+	}
+```
+
+### Lecture 43 - Test Transaction Verification
+
+*  we add tests in transaction test file
