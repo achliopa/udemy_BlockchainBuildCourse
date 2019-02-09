@@ -893,4 +893,61 @@ describe('Transaction',()=>{
 
 ### Lecture 43 - Test Transaction Verification
 
-*  we add tests in transaction test file
+*  we add tests in transaction test file to verif corrrect verification of valid and invalid transactions
+```
+	it('validates a valid transaction', ()=>{
+		expect(Transaction.verifyTransaction(transaction)).toBe(true);
+	});
+
+	it('invalidates a corrupt transaction', ()=>{
+		transaction.outputs[0].amount = 50000;
+		expect(Transaction.verifyTransaction(transaction)).toBe(false);
+	});
+```
+
+### Lecture 44 - Transaction Updates
+
+* if a sender wants to send multiple transactions of same amount to different recipients he can use same input and diff outputs. to optimize the process awe can support transaction updates to create new transactions
+* we add a new method to transaction class 'update()'
+* this will mod the last output object to reflect the new final remaining balance of sender and add oputput objects
+```
+	update(senderWallet, recipient, amount){
+		const senderOutput = this.outputs.find(output => output.address === senderWallet.publicKey);
+
+		if (amount > senderOutput.amount){
+			console.log(`Amount: ${amount} exceeds balance.`);
+			return;
+		}
+
+		senderOutput.amount = senderOutput.amount - amount;
+		this.outputs.push({ amount, address: recipient });
+		Transaction.signTransaction(this, senderWallet);
+		return this;
+	}
+```
+
+### Lecture 45 - Testing Transaction Updates
+
+* we add a new describe block in test file adding a new transaction in beforeeach
+```
+		let nextAmount, nextRecipient;
+		beforeEach(()=>{
+			nextAmount = 20;
+			nextRecipient = 'n3xt-4ddr355';
+			transaction.update(wallet,nextRecipient,nextAmount);
+		});
+```
+* we test that the new amount is subtracted
+```
+		it('subtracts the new amount from the sender output',()=>{
+			expect(transaction.outputs.find(output=> output.address === wallet.publicKey).amount)
+			.toEqual(wallet.balance - amount - nextAmount);
+		});
+```
+* we test that it outputs an amount for the next recipient
+```
+		it('outputs an amount for the next recipient', ()=>{
+			expect(transaction.outputs.find(output=> output.address === nextRecipient).amount)
+			.toEqual(nextAmount);
+		})
+```
