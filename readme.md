@@ -951,3 +951,239 @@ describe('Transaction',()=>{
 			.toEqual(nextAmount);
 		})
 ```
+
+## Section 8 - Collect Transactions in a Pool
+
+### Lecture 46 - Transaction Pool
+
+* transaction pool: an object that contains all new transactions submitted by individuals
+* transactions are considered unconfirmed till included in the chain
+* miners create blocks of confirmed transaction. take them from the pool and add them, to the block
+
+### Lecture 47 - Transaction Pool: Add Transaction
+
+* transaction pool collects all trnasactions submitted by users of network prior to being mined in the block
+* we add a 'transaction-pool.js' file in wallet directory
+* we define the *TransactionPool* class export it and add the constructor that creates n empty array of trnasactions
+* we add an update method to add transactions to the pool
+* we should take into account that a transaction that already exists comes in the array. aka transaction update (same id and input)
+```
+	updateOrAddTransaction(transaction){
+		let transactionWithId = this.transactions.find(t=>t.id === transaction.id);
+
+		if(transactionWithId) {
+			this.transactions[this.transactions.indexOf(transactionWithId)] = transaction;
+		} else {
+			this.transactions.push(transaction);
+		}
+	}
+```
+
+### Lecture 48 - Test the Transaction Pool
+
+* we add a testfile 'transaction-pool.test.js' and import TransactionPool, transaction and wallet
+* we set up the test
+```
+	beforeEach(()=>{
+		tp = new TransactionPool();
+		wallet = new Wallet();
+		transaction = Transaction.newTransaction(wallet, 'r4nd-4ddr355', 30);
+		tp.updateOrAddTransaction(transaction);
+	});
+```
+* first we test transaction was added to pool
+```
+	it('adds a transaction to the pool',()=>{
+		expect(tp.transactions.find(t => t.id === transaction.id)).toEqual(transaction);
+	});
+```
+* then we test a transaction can be updated and that updated transaction in pool is diff that original
+```
+	it('updates a transaction in the pool',()=>{
+		const oldTransaction = JSON.stringify(transaction);
+		const newTransaction = transaction.update(wallet, 'foo-4ddr355', 40);
+		tp.updateOrAddTransaction(newTransaction);
+		expect(JSON.stringify(tp.transactions.find(t => t.id === newTransaction.id)))
+		.not.toEqual(oldTransaction);
+	});
+```
+
+### Lecture 49 - Create Transactions in the Wallet
+
+* we will now give a wallet (user) the ability to create transactions
+* we add method createTransaction in the wallet class.
+* we pass recipient, amount and the transactionPool (to check if it exists so update it)
+* its going to be a complex method with a lot of checks.
+	* we check if ammount exceeds the wallet balnce
+	* we check if a transaction from this wallet exists in the pool (we will use a new transactionPool method that does the check 'existingTransaction')
+```
+	createTransaction(recipient, amount, transactionPool) {
+		if (amount > this.balance) {
+			console.log(`Amount ${amount} exceeds current balance: ${this.balance}`);
+			return;
+		}
+
+		let transaction = transactionPool.existingTransaction(this.publicKey);
+
+		if(transaction) {
+			transaction.update(this, recipient, amount);
+		} else {
+			transaction = Transaction.new(this, recipient,amount);
+		}
+		transactionPool.updateOrAddTransaction(transaction);
+
+		return transaction;
+	}
+```
+
+### Lecture 50 - Test Wallet Transactions
+
+* we will add our first test for wallet
+* we add an 'index.test.js' file
+* we test multiple transactions case
+```
+describe('Wallet', ()=>{
+	let wallet, tp;
+
+	beforeEach(()=>{
+		wallet = new Wallet();
+		tp = new TransactionPool();
+	});
+
+	describe('creating a transaction', ()=>{
+		let transaction, sendAmount, recipient;
+
+		beforeEach(()=>{
+			sendAmount = 30;
+			recipient = 'r4nd0m-4ddr355';
+			transaction = wallet.createTransaction(recipient, sendAmount, tp);
+		});
+
+		describe('and doing the same transaction', ()=>{
+			beforeEach(()=>{
+				wallet.createTransaction(recipient, sendAmount, tp);
+			});
+
+			it('doubles the `sendAmount` subtracted from teh wallet balance',()=>{
+				expect(transaction.outputs.find(output=>output.address === wallet.publicKey).amount)
+				.toEqual(wallet.balance - sendAmount*2);
+			});
+
+			it('clones the `sendAmount` output for the recipient', ()=>{
+				expect(transaction.outputs.filter(output=>output.address === recipient)
+				.map(output => output.amount)).toEqual([sendAmount,sendAmount]);
+			});
+		});
+	});
+});
+```
+
+### Lecture 51 - Get Transactions
+
+* we ll gicve access to the transactions from our Express API
+* we import Wallet and TransactionPool to the app/index.js to access both from API
+* transactionPool will be shared and synchronized among peers in the p2p server
+* we add a get route to see transactions
+```
+app.get('/transactions',(req,res)=>{
+	res.json(tp.transactions);
+});
+```
+* we test in postman
+
+### Lecture 52 - Post Transactions
+
+* we will add the ability to post transactions
+```
+app.post('/transact',(req,res)=>{
+	const { recipient, amount } = req.body;
+	const transaction = wallet.createTransaction(recipient,amount, tp);
+	res.redirect('/transactions');
+});
+```
+* we test in postman and it works
+
+### Lecture 53 - Add the Transaction Pool to the Peer to peer Server
+
+* we will add the transaciton pool to the p2p server to keep transaction pools across users up to date
+* we add trascation pool in the p2p constructor `this.transactionPool = transactionPool;`
+* we also add it in the server creation in index.js `const p2pServer = new P2pServer(bc,tp);`
+* we will add a method in the p2p server that sends transaction pools acrross all peers in the network
+* we will use the same philosophy of syncChains to synbc the pools by sending transactions
+```
+	broadcastTransaction(transaction) {
+		this.sockets.forEach(socket => {
+			this.sendTransaction(socket,transaction);
+		});
+	}
+```
+* we use sendtransaction to send the transaction
+```
+	sendTransaction(socket) {
+		socket.send(JSON.stringify(transaction))
+	}
+```
+* we hit a bottleneck. whe peers listen to the socket message they think is a chain so update the chain. we use the same sockets for transactions
+* we attach typefields to the data we send over the socket
+* we add a global msg types
+```
+const MESSAGE_TYPES = {
+	chain: 'CHAIN',
+	transaction: 'TRANSACTION'
+};
+```
+* we mode the send methods to add the type
+```
+	sendChain(socket) {
+		socket.send(JSON.stringify({
+			type: MESSAGE_TYPES.chain, 
+			chain: this.blockchain.chain
+		}));
+	}
+	sendTransaction(socket,transaction) {
+		socket.send(JSON.stringify({
+			type: MESSAGE_TYPES.transaction,
+			transaction
+		}));
+	}
+```
+
+### Lecture 54 - Handle Transaction Messages in the Peer to peer Server
+
+* we mod messageHandler
+```
+	messageHandler(socket) {
+		socket.on('message',(message)=>{
+			const data = JSON.parse(message);
+			switch(data.type) {
+				case MESSAGE_TYPES.chain:
+					this.blockchain.replaceChain(data.chain);
+					break;
+				case MESSAGE_TYPES.transaction:
+					this.transactionPool.updateOrAddTransaction(data.transaction);
+					break;
+				default:
+					break;
+			}
+		});
+	}
+```
+* we now need to broadcast any time we post a transaction on the WebAPI `	p2pServer.broadcastTransaction(transaction);`
+* we are ready to test running multiple peers `HTTP_PORT=3002 P2P_PORT=5002 PEERS=ws://localhost:5001 npm run dev ` and `HTTP_PORT=3003 P2P_PORT=5003 PEERS=ws://localhost:5001,ws://localhost:5002 npm run dev`
+* IT WORKS
+
+### Lecture 55 - Public Key Endpoint
+
+* we have to be able to share the public key - address so that others can send money
+```
+app.get('/public-key', (req,res)=>{
+	res.json({ publicKey: wallet.publicKey })
+});
+```
+* we test in postman
+
+## Section 9 - Mine Transactions in a Block
+
+### Lecture 56 - Miners of Transactions
+
+* 
