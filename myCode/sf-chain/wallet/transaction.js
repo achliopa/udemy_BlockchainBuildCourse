@@ -12,7 +12,7 @@ class Transaction {
 		const senderOutput = this.outputs.find(output => output.address === senderWallet.publicKey);
 
 		if (amount > senderOutput.amount){
-			console.log(`Amount: ${amount} exceeds balance.`);
+			console.log(`Amount: ${amount} exceeds balance : ${senderOutput.amount}.`);
 			return;
 		}
 

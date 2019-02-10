@@ -1453,4 +1453,85 @@ app.get('/mine-transactions',(req,res)=>{
 
 ### Lecture 68 - Test balance Calculation
 
-* 
+* we add a test for wallet to test balamce calculation
+* we will add balance of each transaction and then test the method
+* in before each we for loop to send an amount
+```
+	describe('claculating a balance',()=>{
+		let addBalance, repeatAdd, senderWallet;
+		beforeEach(()=>{
+			senderWallet = new Wallet();
+			addBalance = 100;
+			repeatAdd = 3;
+			for(let i=0;i<repeatAdd;i++){
+				senderWallet.createTransaction(wallet.publicKey, addBalance,bc,tp);
+			}
+			bc.addBlock(tp.transactions);
+		});
+
+		it('calculates the balance for blockchain transactions matching the recipient', ()=>{
+			expect(wallet.calculateBalance(bc)).toEqual(INITIAL_BALANCE + (addBalance * repeatAdd));
+		});
+
+		it('calculates the balance for blockchain transactions matching the sender',()=>{
+			expect(senderWallet.calculateBalance(bc)).toEqual(INITIAL_BALANCE - (addBalance * repeatAdd));
+		});
+	});
+```
+* we continue testing using the received funds to sende them back
+```
+describe('and the recipient conducts a transaction', ()=>{
+			let subtractbalance, recipientBalance;
+
+			beforeEach(()=>{
+				tp.clear();
+				subtractBalance = 60;
+				recipientBalance = wallet.calculateBalance(bc);
+				wallet.createTransaction(senderWallet.publicKey, subtractBalance, bc, tp);
+				bc.addBlock(tp.transactions);
+			});
+
+			describe('and the sender sends another transaction to the recipient',()=>{
+				beforeEach(()=>{
+					tp.clear();
+					senderWallet.createTransaction(wallet.publicKey, addBalance, bc, tp)
+					bc.addBlock(tp.transactions);
+				});
+
+				it('calculate the recipient balance only using transactions since its most recent one', ()=>{
+					expect(wallet.calculateBalance(bc)).toEqual(recipientBalance - subtractBalance + addBalance);
+				});
+			});
+
+		});
+```
+
+### Lecture 69 - The Cryptocurrency in Action
+
+* we start 2 peers
+```
+npm run dev
+HTTP_PORT=3002 P2P_PORT=5002 PEERS=ws://localhost:5001 npm run dev
+```
+
+* WE fire up postman
+* we get 3002 key `localhost:3002/public-key`
+* we use it to send money to 3002 `localhost:3001/transact` 
+```
+{
+	"recipient": "04dd6279dc89ac12a92f9f82ad83bc22623b4d5fc16d173b842f2e9b94eec034e54057bb56cda0626d588937d08ef38f2e80e22e8dfb7769e8ca71aa2bef56a117",
+	"amount": 50
+}
+```
+* 3001 mines transactions GET `localhost:3001/mine-transactions` we mines and gets the reward
+* we retranact and see balance calculated correctly
+
+## Section 10 - Bonus Content
+
+### Lecture 71 - Ideas on Extending the Project
+
+* A GET ‘/balance’ endpoint that allows the user to calculate their balance based on the blockchain, and view it at any time.
+* Add transaction fees for each user, of 1 currency. Include these fees as part of the reward for the miner.
+* Develop a frontend, where a user can see every fellow user’s public addresses, and send currency to the individual. This frontend could show the current difficulty of the system. It could have buttons for mining the transactions, or viewing the blockchain data. Use your imagination.
+* An implementation where the Miner’s mine() function only grabs a group of the transactions, and not the entire pool. When the subset of transactions from the pool is included in the chain, they would need to be cleared from the pool, and synchronized across all miners.
+* Route the blockchain-approved reward transactions through its own dedicated server. That way, not everyone can create transactions through the special blockchain wallet.
