@@ -1377,4 +1377,80 @@ describe('creating a reward tranaction',()=>{
 
 ### Lecture 64 - Mine Transactions Endpoint
 
+* we import miner in app/index.js and instantiate it `const miner = new Miner(bc,tp,wallet,p2pServer);`
+* we will use it to add transactions from pool to chain
+* we add a GET route '/mine-transactions' to trigger mining the trasaction pool
+```
+app.get('/mine-transactions',(req,res)=>{
+	const block = miner.mine();
+	console.log(`New block added: ${block.toString()}`);
+	res.redirect('/blocks');
+});
+```
+* we  lauch 2 peers
+* we post transactions from both and then hit the route to mine-transactions
+
+### Lecture 65 - The Nuance of Wallet Ballance
+
+* we will recalculat ethe balance based on the history
+* balance = all output amounts that belong to the user
+* update the balance at least before each transaction
+* all outputs since a user's most recent transactions
+* possible of double counting of transactions within the blochchain history
+* calculating based on output amount has a catch as if a wallet is sender is included in the output with its resulting balance
+* we should include only recent transactions
+
+### Lecture 66 - Calculate the Wallet Balance
+
+* in wallet class we add a 'calculateBalance()' method passing in the blockchain
+* we iterate thorugh each block and each transaction in a block ?!?!(WTF? very bad design) to make a list of all transactions
+* we extract transactions created from this wallet
+* we extract recent transactions using redice() comapring them 2 by 2 based on timestamp and keeping recent ones
+* we shoudl not reduce empty arrays (error)
+* after we extranct the amountof the most recent ransaction and set it to balance.
+* we timestamp so that we keep adding on this and do not calculate again
+* then we look only for transactions after this timestamp
+```
+	calculateBalanceBalance(blockchain) {
+		let balance = this.balance;
+		let transactions = [];
+		blockchain.chain.forEach(block=>block.data.forEach(transaction=>{
+			transactions.push(transaction)
+		}));
+
+		const walletInputTs = transactions.filter(transaction => transaction.input.address === this.publicKey);
+
+		let startTime = 0;
+
+		if (walletInputTs.length > 0) {
+			const recentInputT = walletInputTs.reduce(
+				(prev,current) => prev.input.timestamp > current.input.timestamp ? prev : current
+			);
+		
+			balance = recentInputT.outputs.find(output => output.address === this.publicKey).amount;
+			startTime = recentInputT.input.timestamp;
+		}
+
+		transactions.forEach(transaction => {
+			if(transaction.input.timestamp > startTime) {
+				transaction.outputs.find(output =>{
+					if(output.address === this.publicKey) {
+						balance += output.amount;
+					}
+				});
+			}
+		});
+
+		return balance
+	}
+```
+
+### Lecture 67 - Calculate the Balance during each Transaction
+
+* we want to recalculate the balance before each transaction the walet ccreates
+* in createTransaction() we add the `this.balance = this.calculateBalance(blockchain);` and add blockchain as param
+* we fix all method calls adding bc
+
+### Lecture 68 - Test balance Calculation
+
 * 
